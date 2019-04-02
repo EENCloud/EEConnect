@@ -1,0 +1,15 @@
+[Unit]
+Description=Eeconnect Service
+
+[Service]
+Type=dbus
+BusName=nl.een.eeconnect
+ExecStart=/usr/bin/eeconnect
+StandardOutput=journal
+Restart=always
+RestartSec=20
+OOMScoreAdjust=-506
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

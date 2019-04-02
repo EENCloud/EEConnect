@@ -1,0 +1,33 @@
+{
+    "mapPorts": {
+        "prefix": 3,
+        "cameraIdLen": 3,
+        "portLen": 1,
+        "ports": [
+            {
+                "in": 1,
+                "out": 21
+            },
+            {
+                "in": 2,
+                "out": 22
+            },
+            {
+                "in": 3,
+                "out": 23
+            },
+            {
+                "in": 4,
+                "out": 554
+            },
+            {
+                "in": 8,
+                "out": 80
+            },
+            {
+                "in": 9,
+                "out": 5001
+            }
+        ]
+    }
+}

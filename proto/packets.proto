@@ -1,0 +1,28 @@
+syntax = "proto2";
+
+message OpenChannelPacket
+{
+	required int32 channelId = 1;
+	optional string ip = 2 [default = "127.0.0.1"];
+	required int32 port = 3;
+}
+
+message CloseChannelPacket
+{
+	required int32 channelId = 1;
+}
+
+message HelloPacket
+{
+	optional int32 cameraId = 1 [default = -1];
+	required string secret = 2;
+	optional string serialId = 3;
+	map<string, string> hwIds = 4;
+	optional string version = 5;
+}
+
+message RedirectPacket
+{
+	required string ip = 1;
+	required int32 port = 2;
+}

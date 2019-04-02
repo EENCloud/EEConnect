@@ -1,0 +1,11 @@
+/build
+/.cproject
+/.settings/language.settings.xml
+/.project
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+Makefile
+*.a
+*.o
+*~
