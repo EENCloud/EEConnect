@@ -144,9 +144,9 @@ If you discover a vulnerability, please contact us at report-vulnerabilities@een
 Notes on how to report vulnerabilities
 ---------------------------------------
 
-* Please write your correspondence in English or Dutch, if possible.
-* Please provide your name and contact information.
-* So that we can understand your report quickly and efficiently, please include a proof of concept and a detailed description, if possible.
+* Please write your correspondence in English.
+* Please provide your name and contact information, and if you are ok with being named in public disclosures.
+* So that we can understand your report quickly and efficiently, please include a proof of concept and a detailed description.
 * Please give us time to develop and roll out countermeasures, before you make technical details public (Responsible Disclosure).
 * Common vulnerabilites are excluded:
     * Attacks based on “social engineering” by employees or dealers
