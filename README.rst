@@ -132,3 +132,32 @@ Below you can find example certificate generation using `easy-rsa`_ tool::
   [eeconnect]$ ln -sf ../easy-rsa/pki/ca.crt client_confs/ca.cert
 
 .. _`easy-rsa`: https://github.com/OpenVPN/easy-rsa
+
+
+Security
+===========
+
+The security of our products and services is top priority for us – so we naturally respect and appreciate the work of security experts in this area. You can also help us by identifying vulnerabilities so we can address them.
+
+If you discover a vulnerability, please contact us at report-vulnerabilities@een.com
+
+Notes on how to report vulnerabilities
+---------------------------------------
+
+* Please write your correspondence in English or Dutch, if possible.
+* Please provide your name and contact information.
+* So that we can understand your report quickly and efficiently, please include a proof of concept and a detailed description, if possible.
+* Please give us time to develop and roll out countermeasures, before you make technical details public (Responsible Disclosure).
+* Common vulnerabilites are excluded:
+    * Attacks based on “social engineering” by employees or dealers
+    * Phishing attempts
+    * Denial-of-service attacks on servers and websites
+    * Non-reproducible vulnerabilities
+    * Sabotage of mechanical parts of cameras or bridges
+
+We will try to respond to your message and provide you with feedback within two to three business days. 
+
+Recognition of security experts
+-------------------------------
+
+We wish to thank and acknowledge the security experts who are the first to identify vulnerabilities. Thanks to their support and the countermeasures developed by us, we continue to enhance the security of our products and services.
