@@ -1,0 +1,29 @@
+# Copyright (C) 2018-2019 Eagle Eye Networks
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Description
+# ===========
+# This Makefile is here only for unit tests on the console. It is not
+# used by the eeconnect cmake-based build.
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+CCFLAGS += -Wall -Werror -I../src -I$(prefix)/usr/include/glib-2.0 \
+    -I$(prefix)/usr/lib/glib-2.0/include -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
+LDLIBS += -lglib-2.0
+
+TESTS = pnp_protobuf_utils_utest
+
+.c.o:
+	$(CC) $(CCFLAGS) -c $<
+
+all: $(TESTS)
+
+pnp_protobuf_utils.o: ../src/pnp_protobuf_utils.c
+	$(CC) $(CCFLAGS) -c $<
+
+pnp_protobuf_utils_utest: pnp_protobuf_utils_utest.o pnp_protobuf_utils.o
+	$(CC) $^ $(LDFLAGS) $(LDLIBS) -o $@
+
+.PHONY: clean
+clean:
+	rm -f *.o  *.a *.so *~ $(TESTS)
