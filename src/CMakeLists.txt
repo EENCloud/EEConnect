@@ -11,6 +11,7 @@ add_library(pnp STATIC
   pnp_io_ssl.c
   pnp_mapport.c
   pnp_server_addresses.c
+  pnp_protobuf_utils.c
   )
 
 # Version from git

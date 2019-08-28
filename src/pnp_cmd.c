@@ -7,6 +7,7 @@
 #include "pnp_cmd.h"
 #include "pnp_hwaddr.h"
 #include "pnp_io.h"
+#include "pnp_protobuf_utils.h"
 
 #include "proto/packets.pb-c.h"
 #include <sys/socket.h>
@@ -110,6 +111,7 @@ bool pnp_msg_send_hello(struct pnp_connection *c)
 	HelloPacket msg = HELLO_PACKET__INIT;
 	bool success;
 	int err;
+	size_t size_bytes;
 
 	pnp_info("Send Hello!");
 
@@ -129,14 +131,22 @@ bool pnp_msg_send_hello(struct pnp_connection *c)
 		pnp_hwaddr_fill(&pnp_hwaddr_data, &msg);
 
 	payload_len = hello_packet__get_packed_size(&msg);
-	buffer = malloc((size_t)(payload_len + 2));
+	size_bytes = pnp_get_encoded_uint_bytes(payload_len);
+
+	buffer = malloc((size_t)(payload_len + 1 + size_bytes));
+	if (!buffer) {
+		pnp_err("Could not allocate buffer for Hello packet");
+		success = false;
+		goto release_send_hello;
+	}
 
 	*buffer = PNP_CMD_HELLO;
-	*(buffer + 1) = (uint8_t)payload_len;
-	hello_packet__pack(&msg, buffer + 2);
+	pnp_encode_uint_as_varint(payload_len, buffer + 1, size_bytes);
+	hello_packet__pack(&msg, buffer + 1 + size_bytes);
 
-	success = pnp_write_buffer(c, buffer, payload_len + 2, 0);
+	success = pnp_write_buffer(c, buffer, payload_len + 1 + size_bytes, 0);
 
+ release_send_hello:
 	if (!err)
 		pnp_hwaddr_release(&pnp_hwaddr_data);
 
