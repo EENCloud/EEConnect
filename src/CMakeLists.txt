@@ -22,7 +22,7 @@ endif()
 message("EEConnect version ${EECONNECT_VERSION}")
 
 target_compile_options(pnp PUBLIC
-  -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers)
+  -Wall -Werror -Wextra -Wno-unused-parameter -Wno-missing-field-initializers)
 target_link_libraries(pnp PRIVATE libmnl proto pthread)
 target_link_libraries(pnp PUBLIC openssl rapidjson)
 target_include_directories(pnp PRIVATE ${EMBED_INCLUDE_DIRECTORY})
