@@ -350,28 +350,29 @@ bool pnp_msg_send_redirect(struct pnp_connection *c, char *ip, char *port, int f
 	RedirectPacket msg = REDIRECT_PACKET__INIT;
 	int payload_len;
 	uint8_t *buffer;
+	size_t size_bytes;
 
 	msg.ip = ip;
 	msg.port = atoi(port);
 
 	payload_len = redirect_packet__get_packed_size(&msg);
-	buffer = (uint8_t*)malloc(payload_len + 2);
+	size_bytes = pnp_get_encoded_uint_bytes(payload_len);
 
-	if (buffer == NULL) {
-		pnp_err("Failed to allocate buffer of CLOSECHANNEL cmd");
+	buffer = (uint8_t*)malloc(payload_len + 1 + size_bytes);
+	if (!buffer) {
+		pnp_err("Could not allocate buffer for Redirect packet");
 		return false;
 	}
 
-	buffer[0] = PNP_CMD_CLOSECHANNEL;
-	buffer[1] = (uint8_t)payload_len;
-
-	redirect_packet__pack(&msg, buffer + 2);
+	buffer[0] = PNP_CMD_REDIRECT;
+	pnp_encode_uint_as_varint(payload_len, buffer + 1, size_bytes);
+	redirect_packet__pack(&msg, buffer + 1 + size_bytes);
 
 	pnp_info("Redirect %s:%d msg len: %d", msg.ip, msg.port, payload_len);
 
 	/* Send buffer */
-	if (!pnp_write_buffer(c, buffer, payload_len + 2, flags)) {
-		pnp_err("Failed to send buffer of CLOSECHANNEL cmd");
+	if (!pnp_write_buffer(c, buffer, payload_len + 1 + size_bytes, flags)) {
+		pnp_err("Failed to send buffer for Redirect packet");
 		free(buffer);
 		return false;
 	}
@@ -395,7 +396,8 @@ bool pnp_msg_send_redirect(struct pnp_connection *c, char *ip, char *port, int f
  */
 static bool pnp_cmd_handle_redirect(struct pnp_connection *c)
 {
-	uint8_t payload_len;
+	size_t payload_len;
+	size_t len_bytes;
 	uint8_t sbuffer[256];
 	uint8_t *buffer = sbuffer;
 	RedirectPacket *msg;
@@ -411,19 +413,35 @@ static bool pnp_cmd_handle_redirect(struct pnp_connection *c)
 	}
 
 	/* Read request length */
-	payload_len = rbase[(c->rbuf.start) % c->rbuf.maxsize];
-
-	pnp_info("Redirect packet len: %d", (int ) payload_len);
-
-	/* Check length and remove 1 byte from rbuf */
-	if (c->rbuf.size - 1 < payload_len) {
+	len_bytes = pnp_get_size_from_encoded_pnp_buffer(&c->rbuf);
+	if ((int) len_bytes == -1) {
+		/* It is not possible to decode the length yet. */
 		c->rbuf.block = true;
 		c->cmd_continue = true;
 		c->cmd = PNP_CMD_REDIRECT;
 		return false;
 	}
-	c->rbuf.start = (c->rbuf.start + 1) % c->rbuf.maxsize;
-	c->rbuf.size--;
+
+	payload_len = pnp_decode_uint_from_varint_in_pnp_buffer(&c->rbuf);
+	if ((int) payload_len == -1) {
+		/* It is not possible to decode the length yet. */
+		c->rbuf.block = true;
+		c->cmd_continue = true;
+		c->cmd = PNP_CMD_REDIRECT;
+		return false;
+	}
+
+	pnp_info("Redirect packet len: %d", (int ) payload_len);
+
+	/* Check length and remove len_bytes from rbuf */
+	if (c->rbuf.size - len_bytes < payload_len) {
+		c->rbuf.block = true;
+		c->cmd_continue = true;
+		c->cmd = PNP_CMD_REDIRECT;
+		return false;
+	}
+	c->rbuf.start = (c->rbuf.start + len_bytes) % c->rbuf.maxsize;
+	c->rbuf.size -= len_bytes;
 
 	/* Set buffer and remove data from rbuf */
 	if (c->rbuf.maxsize - c->rbuf.start < payload_len) {
