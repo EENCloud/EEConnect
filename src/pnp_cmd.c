@@ -280,22 +280,30 @@ bool pnp_msg_send_closechannel(struct pnp_connection *c, int channel_id)
 {
 	CloseChannelPacket msg = CLOSE_CHANNEL_PACKET__INIT;
 	size_t payload_len;
-	uint8_t sbuffer[258];
+	uint8_t *sbuffer = NULL;
 	uint8_t *buffer = sbuffer;
 	uint8_t *wbase = (uint8_t *)c->wbuf.base;
+	size_t size_bytes;
 
 	msg.channelid = channel_id;
 
 	/* Get buffer length */
 	payload_len = close_channel_packet__get_packed_size(&msg);
+	size_bytes = pnp_get_encoded_uint_bytes(payload_len);
 
 	/* Check if there is enough space in buffer */
-	if (c->wbuf.maxsize - c->wbuf.size < payload_len + 2) {
+	if (c->wbuf.maxsize - c->wbuf.size < payload_len + 1 + size_bytes) {
 		return false;
 	}
 
 	/* Check if data can be written in one piece */
-	if (c->wbuf.maxsize - (c->wbuf.start + c->wbuf.size) % c->wbuf.maxsize < payload_len + 2) {
+	if (c->wbuf.maxsize - (c->wbuf.start + c->wbuf.size) % c->wbuf.maxsize <
+	    payload_len + 1 + size_bytes) {
+		sbuffer = malloc((size_t)(payload_len + 1 + size_bytes));
+		if (!sbuffer) {
+			pnp_err("Could not allocate buffer for OpenChannel packet");
+			return false;
+		}
 		buffer = sbuffer;
 	}
 	else {
@@ -304,19 +312,20 @@ bool pnp_msg_send_closechannel(struct pnp_connection *c, int channel_id)
 
 	/* Fill the buffer */
 	buffer[0] = PNP_CMD_CLOSECHANNEL;
-	buffer[1] = (uint8_t)payload_len;
-	close_channel_packet__pack(&msg, buffer + 2);
+	pnp_encode_uint_as_varint(payload_len, buffer + 1, size_bytes);
+	close_channel_packet__pack(&msg, buffer + 1 + size_bytes);
 
 	/* Copy data if we used temporary buffer */
-	if (buffer == sbuffer) {
+	if (sbuffer) {
 		size_t i;
-		for (i = 0; i < payload_len + 2; i++) {
+		for (i = 0; i < payload_len + 1 + size_bytes; i++) {
 			wbase[(c->wbuf.start + c->wbuf.size + i) % c->wbuf.maxsize] = buffer[i];
 		}
+		free(sbuffer);
 	}
 
 	/* Adjust wbuf size */
-	c->wbuf.size += (payload_len + 2);
+	c->wbuf.size += (payload_len + 1 + size_bytes);
 
 	pnp_info("Send CloseChannel channelId:%d msg len: %d", channel_id, (int )payload_len);
 
@@ -630,7 +639,8 @@ static bool pnp_cmd_handle_openchannel(struct pnp_connection *c)
  */
 static bool pnp_cmd_handle_closechannel(struct pnp_connection *c)
 {
-	uint8_t payload_len;
+	size_t payload_len;
+	size_t len_bytes;
 	uint8_t sbuffer[256];
 	uint8_t *buffer = sbuffer;
 	CloseChannelPacket *msg;
@@ -646,19 +656,35 @@ static bool pnp_cmd_handle_closechannel(struct pnp_connection *c)
 	}
 
 	/* Read request length */
-	payload_len = rbase[(c->rbuf.start) % c->rbuf.maxsize];
-
-	pnp_info("CloseChannel packet len: %d", (int ) payload_len);
-
-	/* Check length and remove 1 byte from rbuf */
-	if (c->rbuf.size - 1 < payload_len) {
+	len_bytes = pnp_get_size_from_encoded_pnp_buffer(&c->rbuf);
+	if ((int) len_bytes == -1) {
+		/* It is not possible to decode the length yet. */
 		c->rbuf.block = true;
 		c->cmd_continue = true;
 		c->cmd = PNP_CMD_CLOSECHANNEL;
 		return false;
 	}
-	c->rbuf.start = (c->rbuf.start + 1) % c->rbuf.maxsize;
-	c->rbuf.size--;
+
+	payload_len = pnp_decode_uint_from_varint_in_pnp_buffer(&c->rbuf);
+	if ((int) payload_len == -1) {
+		/* It is not possible to decode the length yet. */
+		c->rbuf.block = true;
+		c->cmd_continue = true;
+		c->cmd = PNP_CMD_CLOSECHANNEL;
+		return false;
+	}
+
+	pnp_info("CloseChannel packet len: %d", (int ) payload_len);
+
+	/* Check length and remove len_bytes from rbuf */
+	if (c->rbuf.size - len_bytes < payload_len) {
+		c->rbuf.block = true;
+		c->cmd_continue = true;
+		c->cmd = PNP_CMD_CLOSECHANNEL;
+		return false;
+	}
+	c->rbuf.start = (c->rbuf.start + len_bytes) % c->rbuf.maxsize;
+	c->rbuf.size -= len_bytes;
 
 	/* Set buffer and remove data from rbuf */
 	if (c->rbuf.maxsize - c->rbuf.start < payload_len) {
