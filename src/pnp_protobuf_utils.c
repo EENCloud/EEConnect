@@ -48,3 +48,102 @@ size_t pnp_encode_uint_as_varint(unsigned int value, uint8_t *out, size_t max_le
 
 	return bytes_written;
 }
+
+size_t pnp_get_size_from_encoded_buffer(uint8_t *buffer, size_t max_length)
+{
+	bool finished = false;
+	uint8_t *ptr = buffer;
+	size_t size = 0;
+	do {
+		if( size >= max_length) {
+			/* Could not read the whole varint in max_length bytes */
+			return -1;
+		}
+
+		size++;
+		if (*ptr & 0x80) {
+			/* Keep going, more bytes should be read */
+			ptr++;
+		} else {
+			finished = true;
+		}
+	} while (!finished);
+
+	return size;
+}
+
+size_t pnp_get_size_from_encoded_pnp_buffer(struct pnp_buffer *buffer)
+{
+	bool finished = false;
+	uint8_t *ptr;
+	int ptr_offset = 0;
+	size_t size = 0;
+	do {
+		if (size >= buffer->size) {
+			/* Could not read the whole varint */
+			return -1;
+		}
+
+		ptr = buffer->base + ((buffer->start + ptr_offset) % buffer->maxsize);
+		size++;
+		if (*ptr & 0x80) {
+			/* Keep going, more bytes should be read */
+			ptr_offset++;
+		} else {
+			finished = true;
+		}
+	} while (!finished);
+
+	return size;
+}
+
+
+size_t pnp_decode_uint_from_varint(uint8_t *buffer, size_t max_length)
+{
+	uint8_t *ptr = buffer;
+	size_t bytes_read = 0;
+	int value = 0;
+	bool finished = false;
+
+	while (bytes_read < max_length) {
+		value += ( (*ptr & 0x7F) << (7 * bytes_read));
+		bytes_read++;
+
+		if (*ptr & 0x80) {
+			/* Keep going, more bytes should be read */
+			ptr++;
+		} else {
+			finished = true;
+			break;
+		}
+	}
+
+	return finished? value: -1;
+}
+
+
+size_t pnp_decode_uint_from_varint_in_pnp_buffer(struct pnp_buffer *buffer)
+{
+	uint8_t *ptr;
+	int ptr_offset = 0;
+	size_t bytes_read = 0;
+	int value = 0;
+	bool finished = false;
+
+	while (bytes_read < buffer->size) {
+		ptr = buffer->base + ((buffer->start + ptr_offset) % buffer->maxsize);
+
+		value += ( (*ptr & 0x7F) << (7 * bytes_read));
+		bytes_read++;
+
+		if (*ptr & 0x80) {
+			/* Keep going, more bytes should be read */
+			ptr_offset++;
+		} else {
+			finished = true;
+			break;
+		}
+	}
+
+	return finished? value: -1;
+}

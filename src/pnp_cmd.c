@@ -681,7 +681,8 @@ static bool pnp_cmd_handle_closechannel(struct pnp_connection *c)
  */
 static bool pnp_cmd_handle_hello(struct pnp_connection *c)
 {
-	uint8_t payload_len;
+	size_t payload_len;
+	size_t len_bytes;
 	uint8_t sbuffer[256];
 	uint8_t *buffer = sbuffer;
 	HelloPacket *msg;
@@ -697,19 +698,37 @@ static bool pnp_cmd_handle_hello(struct pnp_connection *c)
 	}
 
 	/* Read request length */
-	payload_len = rbase[(c->rbuf.start) % c->rbuf.maxsize];
-
-	pnp_info("Hello packet len: %d", (int ) payload_len);
-
-	/* Check length and remove 1 byte from rbuf */
-	if (c->rbuf.size - 1 < payload_len) {
+	len_bytes = pnp_get_size_from_encoded_pnp_buffer(&c->rbuf);
+	if ((int) len_bytes == -1) {
+		/* It is not possible to decode the length yet. */
 		c->rbuf.block = true;
 		c->cmd_continue = true;
 		c->cmd = PNP_CMD_HELLO;
 		return false;
 	}
-	c->rbuf.start = (c->rbuf.start + 1) % c->rbuf.maxsize;
-	c->rbuf.size--;
+
+	payload_len = pnp_decode_uint_from_varint_in_pnp_buffer(&c->rbuf);
+	if ((int) payload_len == -1) {
+		/* It is not possible to decode the length yet. */
+		c->rbuf.block = true;
+		c->cmd_continue = true;
+		c->cmd = PNP_CMD_HELLO;
+		return false;
+	}
+
+	pnp_info("Hello packet len: %d", (int ) payload_len);
+
+	/* Check length and remove len_bytes from rbuf */
+	if (c->rbuf.size - len_bytes < payload_len) {
+		/* The payload has not been received completely. Wait
+		   until it can be completely read. */
+		c->rbuf.block = true;
+		c->cmd_continue = true;
+		c->cmd = PNP_CMD_HELLO;
+		return false;
+	}
+	c->rbuf.start = (c->rbuf.start + len_bytes) % c->rbuf.maxsize;
+	c->rbuf.size -= len_bytes;
 
 	/* Set buffer and remove data from rbuf */
 	if (c->rbuf.maxsize - c->rbuf.start < payload_len) {
