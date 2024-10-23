@@ -1,0 +1,27 @@
+name: EEConnect
+id: ari:cloud:compass:4337fc0d-aa55-4ff9-bd75-ef7117ff9381:component/4c6fdffe-fa4a-46ef-9e6f-a1aa05480c89/63b3c7ea-92bb-4ea5-a8af-31c262fc67bc
+description: Eagle Eye Connect code, part of Eagle Eye Cloud Camera Specification
+configVersion: 1
+typeId: SERVICE
+ownerId: null
+fields:
+  tier: 4
+links:
+  - name: null
+    type: REPOSITORY
+    url: https://github.com/EENCloud/EEConnect
+relationships:
+  DEPENDS_ON: []
+labels:
+  - language:c
+  - source:github
+customFields:
+  - name: Audit status
+    type: single_select
+    value: null
+  - name: Production deployed
+    type: boolean
+    value: false
+  - name: Requires audit
+    type: boolean
+    value: false
