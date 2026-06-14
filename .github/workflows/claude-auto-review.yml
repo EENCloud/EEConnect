@@ -1,0 +1,13 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, review_requested]
+
+jobs:
+  claude-review:
+    uses: EENCloud/workflow-library/.github/workflows/claude_auto_review.yml@main
+    secrets:
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_CA_CERT: ${{ secrets.VAULT_CA_CERT }}
