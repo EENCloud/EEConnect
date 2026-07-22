@@ -1,5 +1,6 @@
 name: EEConnect
 id: ari:cloud:compass:4337fc0d-aa55-4ff9-bd75-ef7117ff9381:component/4c6fdffe-fa4a-46ef-9e6f-a1aa05480c89/f24b7541-44f2-431b-8178-abd0fee31a1d
+slug: eeconnect
 configVersion: 1
 typeId: OTHER
 ownerId: ari:cloud:identity::team/15ffe7d7-ae10-434c-a194-d915c36419f1 # Devices - Integration (273)
